@@ -1,0 +1,14 @@
+[data-df-popover-content] {
+  background: var(--df-popover-bg, var(--df-surface, #fff));
+  color: var(--df-popover-color, var(--df-text, inherit));
+  border: 1px solid var(--df-popover-border, var(--df-border, rgba(0, 0, 0, 0.1)));
+  border-radius: var(--df-popover-radius, var(--df-radius-md, 6px));
+  box-shadow: var(--df-popover-shadow, var(--df-shadow-lg, 0 8px 24px rgba(0, 0, 0, 0.12)));
+  padding: var(--df-popover-padding, 8px);
+  z-index: var(--df-popover-z-index, 1000);
+  outline: none;
+}
+
+[data-df-popover-arrow] {
+  fill: var(--df-popover-bg, var(--df-surface, #fff));
+}

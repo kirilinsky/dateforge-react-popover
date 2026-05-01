@@ -1,0 +1,160 @@
+{
+  "name": "@dateforge/react-popover",
+  "version": "0.0.1",
+  "description": "Composable popover primitives for React.",
+  "keywords": [
+    "react",
+    "popover",
+    "overlay",
+    "floating",
+    "dateforge"
+  ],
+  "homepage": "https://github.com/kirilinsky/dateforge-react-popover#readme",
+  "bugs": {
+    "url": "https://github.com/kirilinsky/dateforge-react-popover/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kirilinsky/dateforge-react-popover.git"
+  },
+  "license": "MIT",
+  "author": "",
+  "type": "module",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./context": {
+      "import": {
+        "types": "./dist/context.d.ts",
+        "default": "./dist/context.mjs"
+      },
+      "require": {
+        "types": "./dist/context.d.cts",
+        "default": "./dist/context.cjs"
+      }
+    },
+    "./modules": {
+      "import": {
+        "types": "./dist/modules/index.d.ts",
+        "default": "./dist/modules/index.mjs"
+      },
+      "require": {
+        "types": "./dist/modules/index.d.cts",
+        "default": "./dist/modules/index.cjs"
+      }
+    },
+    "./modules/trigger": {
+      "import": {
+        "types": "./dist/modules/trigger.d.ts",
+        "default": "./dist/modules/trigger.mjs"
+      },
+      "require": {
+        "types": "./dist/modules/trigger.d.cts",
+        "default": "./dist/modules/trigger.cjs"
+      }
+    },
+    "./modules/content": {
+      "import": {
+        "types": "./dist/modules/content.d.ts",
+        "default": "./dist/modules/content.mjs"
+      },
+      "require": {
+        "types": "./dist/modules/content.d.cts",
+        "default": "./dist/modules/content.cjs"
+      }
+    },
+    "./modules/portal": {
+      "import": {
+        "types": "./dist/modules/portal.d.ts",
+        "default": "./dist/modules/portal.mjs"
+      },
+      "require": {
+        "types": "./dist/modules/portal.d.cts",
+        "default": "./dist/modules/portal.cjs"
+      }
+    },
+    "./modules/arrow": {
+      "import": {
+        "types": "./dist/modules/arrow.d.ts",
+        "default": "./dist/modules/arrow.mjs"
+      },
+      "require": {
+        "types": "./dist/modules/arrow.d.cts",
+        "default": "./dist/modules/arrow.cjs"
+      }
+    },
+    "./modules/close": {
+      "import": {
+        "types": "./dist/modules/close.d.ts",
+        "default": "./dist/modules/close.mjs"
+      },
+      "require": {
+        "types": "./dist/modules/close.d.cts",
+        "default": "./dist/modules/close.cjs"
+      }
+    },
+    "./modules/anchor": {
+      "import": {
+        "types": "./dist/modules/anchor.d.ts",
+        "default": "./dist/modules/anchor.mjs"
+      },
+      "require": {
+        "types": "./dist/modules/anchor.d.cts",
+        "default": "./dist/modules/anchor.cjs"
+      }
+    },
+    "./styles.css": "./dist/styles.css",
+    "./package.json": "./package.json"
+  },
+  "main": "./dist/index.cjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "check:exports": "publint && attw --pack .",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@floating-ui/react-dom": "^2.1.2"
+  },
+  "devDependencies": {
+    "@arethetypeswrong/cli": "^0.17.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "jsdom": "^25.0.1",
+    "publint": "^0.3.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "tsdown": "^0.21.4",
+    "@tsdown/css": "^0.21.4",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  },
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "module": "./dist/index.mjs"
+}
