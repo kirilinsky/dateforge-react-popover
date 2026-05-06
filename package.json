@@ -20,6 +20,13 @@
   "license": "MIT",
   "author": "",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "volta": {
+    "node": "22.22.2",
+    "npm": "11.4.1"
+  },
   "exports": {
     ".": {
       "import": {
@@ -111,7 +118,7 @@
         "default": "./dist/modules/anchor.cjs"
       }
     },
-    "./styles.css": "./dist/styles.css",
+    "./styles.css": "./dist/style.css",
     "./package.json": "./package.json"
   },
   "main": "./dist/index.cjs",
@@ -128,6 +135,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "check:exports": "publint && attw --pack .",
+    "size": "node scripts/check-size.mjs",
     "clean": "rm -rf dist"
   },
   "dependencies": {
