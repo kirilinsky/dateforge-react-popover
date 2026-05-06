@@ -1,4 +1,4 @@
-export { PopoverContext, usePopoverContext } from "./core/context";
+export { PopoverContext, usePopoverContext } from "../core/context";
 export type {
   PopoverContextValue,
   PopoverProps,
@@ -6,4 +6,4 @@ export type {
   PopoverAlign,
   PopoverState,
   PopoverRole,
-} from "./core/types";
+} from "../core/types";

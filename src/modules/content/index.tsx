@@ -69,7 +69,7 @@ export const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentPro
             });
           },
         }),
-    ].filter(Boolean) as Parameters<typeof useFloating>[0]["middleware"];
+    ].filter(Boolean) as NonNullable<Parameters<typeof useFloating>[0]>["middleware"];
 
     const { refs, floatingStyles, placement } = useFloating({
       open: ctx.open,
