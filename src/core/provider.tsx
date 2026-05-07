@@ -47,7 +47,12 @@ export function Popover(props: PopoverProps): React.ReactElement {
   useOutsidePress(
     open && closeOnOutsidePress,
     [triggerRef, contentRef],
-    () => setOpen(false),
+    () => {
+      setOpen(false);
+      window.setTimeout(() => {
+        triggerRef.current?.focus();
+      }, 0);
+    },
   );
 
   const value = React.useMemo<PopoverContextValue>(
