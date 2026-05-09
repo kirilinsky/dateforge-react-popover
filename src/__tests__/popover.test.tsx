@@ -27,6 +27,27 @@ describe("Popover", () => {
     expect(screen.getByText("Body")).toBeInTheDocument();
   });
 
+  it("sets trigger aria state and controls only while open", async () => {
+    const user = userEvent.setup();
+    render(
+      <Popover>
+        <PopoverTrigger asChild>
+          <button type="button">Open</button>
+        </PopoverTrigger>
+        <PopoverContent>Body</PopoverContent>
+      </Popover>,
+    );
+
+    const trigger = screen.getByText("Open");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).not.toHaveAttribute("aria-controls");
+
+    await user.click(trigger);
+    const content = screen.getByRole("dialog");
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(trigger).toHaveAttribute("aria-controls", content.id);
+  });
+
   it("closes on second trigger click", async () => {
     const user = userEvent.setup();
     render(
@@ -254,6 +275,77 @@ describe("Popover", () => {
     const content = screen.getByRole("dialog");
     expect(content).toHaveAttribute("data-side", side);
     expect(content).toHaveAttribute("data-align", align);
+  });
+
+  it("applies sideOffset and alignOffset to floating position", async () => {
+    const rectSpy = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockImplementation(function getBoundingClientRect(this: Element) {
+        if (this.textContent?.includes("Open")) {
+          return new DOMRect(20, 30, 100, 40);
+        }
+        if (this instanceof HTMLElement && this.dataset.dfPopoverContent !== undefined) {
+          return new DOMRect(0, 0, 80, 30);
+        }
+        return new DOMRect();
+      });
+
+    try {
+      render(
+        <Popover defaultOpen>
+          <PopoverTrigger asChild>
+            <button type="button">Open</button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="start"
+            alignOffset={6}
+            avoidCollisions={false}
+            side="bottom"
+            sideOffset={12}
+          >
+            Body
+          </PopoverContent>
+        </Popover>,
+      );
+
+      const content = screen.getByRole("dialog");
+      await waitFor(() => {
+        expect(content).toHaveStyle({ transform: "translate(6px, 52px)" });
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
+  });
+
+  it("matches trigger width when matchTriggerWidth is enabled", async () => {
+    const rectSpy = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockImplementation(function getBoundingClientRect(this: Element) {
+        if (this.textContent?.includes("Open")) {
+          return new DOMRect(0, 0, 144, 32);
+        }
+        if (this instanceof HTMLElement && this.dataset.dfPopoverContent !== undefined) {
+          return new DOMRect(0, 0, 80, 24);
+        }
+        return new DOMRect();
+      });
+
+    try {
+      render(
+        <Popover defaultOpen>
+          <PopoverTrigger asChild>
+            <button type="button">Open</button>
+          </PopoverTrigger>
+          <PopoverContent matchTriggerWidth>Body</PopoverContent>
+        </Popover>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog")).toHaveStyle({ minWidth: "144px" });
+      });
+    } finally {
+      rectSpy.mockRestore();
+    }
   });
 
   it("renders portal content in document.body by default", async () => {
