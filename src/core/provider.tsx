@@ -2,6 +2,7 @@ import * as React from "react";
 import { PopoverContext } from "./context";
 import { useControllableState } from "./use-controllable-state";
 import { useEscapeKey } from "./use-escape-key";
+import { useFocusOutside } from "./use-focus-outside";
 import { useOutsidePress } from "./use-outside-press";
 import type { PopoverContextValue, PopoverProps } from "./types";
 
@@ -30,6 +31,9 @@ export function Popover(props: PopoverProps): React.ReactElement {
 
   const triggerRef = React.useRef<HTMLElement | null>(null);
   const contentRef = React.useRef<HTMLElement | null>(null);
+  const onEscapeKeyDownRef =
+    React.useRef<(event: KeyboardEvent) => void>();
+  const onInteractOutsideRef = React.useRef<(event: Event) => void>();
 
   const setOpen = React.useCallback(
     (next: boolean) => {
@@ -39,7 +43,10 @@ export function Popover(props: PopoverProps): React.ReactElement {
     [disabled, setOpenState],
   );
 
-  useEscapeKey(open && closeOnEscape, () => {
+  useEscapeKey(open && closeOnEscape, (event) => {
+    onEscapeKeyDownRef.current?.(event);
+    if (event.defaultPrevented) return;
+
     setOpen(false);
     triggerRef.current?.focus();
   });
@@ -47,11 +54,26 @@ export function Popover(props: PopoverProps): React.ReactElement {
   useOutsidePress(
     open && closeOnOutsidePress,
     [triggerRef, contentRef],
-    () => {
+    (event) => {
+      onInteractOutsideRef.current?.(event);
+      if (event.defaultPrevented) return;
+
       setOpen(false);
       window.setTimeout(() => {
         triggerRef.current?.focus();
       }, 0);
+    },
+  );
+
+  useFocusOutside(
+    open && closeOnFocusOutside,
+    [triggerRef, contentRef],
+    (event) => {
+      onInteractOutsideRef.current?.(event);
+      if (event.defaultPrevented) return;
+
+      setOpen(false);
+      triggerRef.current?.focus();
     },
   );
 
@@ -68,6 +90,8 @@ export function Popover(props: PopoverProps): React.ReactElement {
       contentId,
       triggerRef,
       contentRef,
+      onEscapeKeyDownRef,
+      onInteractOutsideRef,
     }),
     [
       open,

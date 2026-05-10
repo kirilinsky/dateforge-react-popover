@@ -19,8 +19,7 @@ import type {
 
 export type PopoverContentProps = {
   side?: PopoverSide;
-  align?: PopoverAlign;
-
+  align?: PopoverAlign; 
   sideOffset?: number;
   alignOffset?: number;
   collisionPadding?: number;
@@ -72,6 +71,8 @@ function PopoverContentImpl(
     avoidCollisions = true,
     matchTriggerWidth = false,
     role = "dialog",
+    onEscapeKeyDown,
+    onInteractOutside,
     style,
     className,
     children,
@@ -101,6 +102,24 @@ function PopoverContentImpl(
   React.useEffect(() => {
     refs.setReference(ctx.triggerRef.current);
   }, [refs, ctx.triggerRef]);
+
+  React.useEffect(() => {
+    ctx.onEscapeKeyDownRef.current = onEscapeKeyDown;
+    return () => {
+      if (ctx.onEscapeKeyDownRef.current === onEscapeKeyDown) {
+        ctx.onEscapeKeyDownRef.current = undefined;
+      }
+    };
+  }, [ctx.onEscapeKeyDownRef, onEscapeKeyDown]);
+
+  React.useEffect(() => {
+    ctx.onInteractOutsideRef.current = onInteractOutside;
+    return () => {
+      if (ctx.onInteractOutsideRef.current === onInteractOutside) {
+        ctx.onInteractOutsideRef.current = undefined;
+      }
+    };
+  }, [ctx.onInteractOutsideRef, onInteractOutside]);
 
   const [resolvedSide, resolvedAlign = "center"] = placement.split("-") as [
     PopoverSide,

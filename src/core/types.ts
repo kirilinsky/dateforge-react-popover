@@ -39,4 +39,10 @@ export type PopoverContextValue = {
 
   triggerRef: React.MutableRefObject<HTMLElement | null>;
   contentRef: React.MutableRefObject<HTMLElement | null>;
+  onEscapeKeyDownRef: React.MutableRefObject<
+    ((event: KeyboardEvent) => void) | undefined
+  >;
+  onInteractOutsideRef: React.MutableRefObject<
+    ((event: Event) => void) | undefined
+  >;
 };

@@ -223,6 +223,78 @@ describe("Popover", () => {
     expect(onOpenChange).toHaveBeenNthCalledWith(2, false);
   });
 
+  it("lets onEscapeKeyDown prevent Escape close", async () => {
+    const user = userEvent.setup();
+    const onEscapeKeyDown = vi.fn((event: KeyboardEvent) => {
+      event.preventDefault();
+    });
+    render(
+      <Popover>
+        <PopoverTrigger asChild>
+          <button type="button">Open</button>
+        </PopoverTrigger>
+        <PopoverContent onEscapeKeyDown={onEscapeKeyDown}>Body</PopoverContent>
+      </Popover>,
+    );
+
+    await user.click(screen.getByText("Open"));
+    await user.keyboard("{Escape}");
+
+    expect(onEscapeKeyDown).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Body")).toBeInTheDocument();
+  });
+
+  it("lets onInteractOutside prevent outside close", async () => {
+    const user = userEvent.setup();
+    const onInteractOutside = vi.fn((event: Event) => {
+      event.preventDefault();
+    });
+    render(
+      <>
+        <Popover>
+          <PopoverTrigger asChild>
+            <button type="button">Open</button>
+          </PopoverTrigger>
+          <PopoverContent onInteractOutside={onInteractOutside}>
+            Body
+          </PopoverContent>
+        </Popover>
+        <button type="button">Outside</button>
+      </>,
+    );
+
+    await user.click(screen.getByText("Open"));
+    await user.click(screen.getByText("Outside"));
+
+    expect(onInteractOutside).toHaveBeenCalledTimes(1);
+    expect(screen.getByText("Body")).toBeInTheDocument();
+  });
+
+  it("closes on focus outside when enabled", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <Popover closeOnFocusOutside defaultOpen>
+          <PopoverTrigger asChild>
+            <button type="button">Open</button>
+          </PopoverTrigger>
+          <PopoverContent>
+            <button type="button">Inside</button>
+          </PopoverContent>
+        </Popover>
+        <button type="button">Outside</button>
+      </>,
+    );
+
+    const trigger = screen.getByText("Open");
+    await user.click(screen.getByText("Inside"));
+    expect(screen.getByText("Inside")).toHaveFocus();
+
+    await user.tab();
+    expect(screen.queryByText("Inside")).not.toBeInTheDocument();
+    expect(trigger).toHaveFocus();
+  });
+
   it("does not trap focus when non-modal", async () => {
     const user = userEvent.setup();
     render(
