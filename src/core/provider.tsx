@@ -1,5 +1,6 @@
 import * as React from "react";
 import { PopoverContext } from "./context";
+import { createCancelableFocusEvent } from "./focus";
 import { useControllableState } from "./use-controllable-state";
 import { useEscapeKey } from "./use-escape-key";
 import { useFocusOutside } from "./use-focus-outside";
@@ -34,6 +35,7 @@ export function Popover(props: PopoverProps): React.ReactElement {
   const onEscapeKeyDownRef =
     React.useRef<(event: KeyboardEvent) => void>();
   const onInteractOutsideRef = React.useRef<(event: Event) => void>();
+  const onCloseAutoFocusRef = React.useRef<(event: Event) => void>();
 
   const setOpen = React.useCallback(
     (next: boolean) => {
@@ -43,12 +45,35 @@ export function Popover(props: PopoverProps): React.ReactElement {
     [disabled, setOpenState],
   );
 
+  const closeAndFocusTrigger = React.useCallback(
+    (options?: { delayFocus?: boolean }) => {
+      const focusEvent = createCancelableFocusEvent(
+        "df.popover.closeAutoFocus",
+      );
+      onCloseAutoFocusRef.current?.(focusEvent);
+
+      setOpen(false);
+      if (focusEvent.defaultPrevented) return;
+
+      const focusTrigger = () => {
+        triggerRef.current?.focus();
+      };
+
+      if (options?.delayFocus) {
+        window.setTimeout(focusTrigger, 0);
+        return;
+      }
+
+      focusTrigger();
+    },
+    [setOpen],
+  );
+
   useEscapeKey(open && closeOnEscape, (event) => {
     onEscapeKeyDownRef.current?.(event);
     if (event.defaultPrevented) return;
 
-    setOpen(false);
-    triggerRef.current?.focus();
+    closeAndFocusTrigger();
   });
 
   useOutsidePress(
@@ -58,10 +83,7 @@ export function Popover(props: PopoverProps): React.ReactElement {
       onInteractOutsideRef.current?.(event);
       if (event.defaultPrevented) return;
 
-      setOpen(false);
-      window.setTimeout(() => {
-        triggerRef.current?.focus();
-      }, 0);
+      closeAndFocusTrigger({ delayFocus: true });
     },
   );
 
@@ -72,8 +94,7 @@ export function Popover(props: PopoverProps): React.ReactElement {
       onInteractOutsideRef.current?.(event);
       if (event.defaultPrevented) return;
 
-      setOpen(false);
-      triggerRef.current?.focus();
+      closeAndFocusTrigger();
     },
   );
 
@@ -92,6 +113,7 @@ export function Popover(props: PopoverProps): React.ReactElement {
       contentRef,
       onEscapeKeyDownRef,
       onInteractOutsideRef,
+      onCloseAutoFocusRef,
     }),
     [
       open,
@@ -103,6 +125,7 @@ export function Popover(props: PopoverProps): React.ReactElement {
       closeOnFocusOutside,
       triggerId,
       contentId,
+      closeAndFocusTrigger,
     ],
   );
 

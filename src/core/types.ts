@@ -45,4 +45,7 @@ export type PopoverContextValue = {
   onInteractOutsideRef: React.MutableRefObject<
     ((event: Event) => void) | undefined
   >;
+  onCloseAutoFocusRef: React.MutableRefObject<
+    ((event: Event) => void) | undefined
+  >;
 };

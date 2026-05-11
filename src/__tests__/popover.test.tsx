@@ -1,6 +1,7 @@
 import * as React from "react";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { hydrateRoot, type Root } from "react-dom/client";
 import { renderToString } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -319,6 +320,104 @@ describe("Popover", () => {
     expect(screen.getByText("Outside")).toHaveFocus();
   });
 
+  it("auto focuses the first focusable content element on open", async () => {
+    const user = userEvent.setup();
+    render(
+      <Popover>
+        <PopoverTrigger asChild>
+          <button type="button">Open</button>
+        </PopoverTrigger>
+        <PopoverContent>
+          <button type="button">Inside</button>
+        </PopoverContent>
+      </Popover>,
+    );
+
+    await user.click(screen.getByText("Open"));
+    await waitFor(() => {
+      expect(screen.getByText("Inside")).toHaveFocus();
+    });
+  });
+
+  it("lets onOpenAutoFocus prevent initial content focus", async () => {
+    const user = userEvent.setup();
+    const onOpenAutoFocus = vi.fn((event: Event) => {
+      event.preventDefault();
+    });
+    render(
+      <Popover>
+        <PopoverTrigger asChild>
+          <button type="button">Open</button>
+        </PopoverTrigger>
+        <PopoverContent onOpenAutoFocus={onOpenAutoFocus}>
+          <button type="button">Inside</button>
+        </PopoverContent>
+      </Popover>,
+    );
+
+    const trigger = screen.getByText("Open");
+    await user.click(trigger);
+
+    expect(onOpenAutoFocus).toHaveBeenCalledTimes(1);
+    expect(trigger).toHaveFocus();
+  });
+
+  it("lets onCloseAutoFocus prevent focus returning to the trigger", async () => {
+    const user = userEvent.setup();
+    const onCloseAutoFocus = vi.fn((event: Event) => {
+      event.preventDefault();
+    });
+    render(
+      <Popover>
+        <PopoverTrigger asChild>
+          <button type="button">Open</button>
+        </PopoverTrigger>
+        <PopoverContent onCloseAutoFocus={onCloseAutoFocus}>
+          <button type="button">Inside</button>
+        </PopoverContent>
+      </Popover>,
+    );
+
+    const trigger = screen.getByText("Open");
+    await user.click(trigger);
+    await user.keyboard("{Escape}");
+
+    expect(onCloseAutoFocus).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Inside")).not.toBeInTheDocument();
+    expect(trigger).not.toHaveFocus();
+  });
+
+  it("traps tab focus when modal", async () => {
+    const user = userEvent.setup();
+    render(
+      <>
+        <Popover modal defaultOpen>
+          <PopoverTrigger asChild>
+            <button type="button">Open</button>
+          </PopoverTrigger>
+          <PopoverContent>
+            <button type="button">First</button>
+            <button type="button">Second</button>
+          </PopoverContent>
+        </Popover>
+        <button type="button">Outside</button>
+      </>,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText("First")).toHaveFocus();
+    });
+
+    await user.tab();
+    expect(screen.getByText("Second")).toHaveFocus();
+
+    await user.tab();
+    expect(screen.getByText("First")).toHaveFocus();
+
+    await user.tab({ shift: true });
+    expect(screen.getByText("Second")).toHaveFocus();
+  });
+
   it.each([
     ["top", "start"],
     ["top", "center"],
@@ -486,5 +585,52 @@ describe("Popover", () => {
         </Popover>,
       ),
     ).not.toThrow();
+  });
+
+  it("renders deterministic defaultOpen markup on the server", () => {
+    const html = renderToString(
+      <Popover defaultOpen>
+        <PopoverTrigger asChild>
+          <button type="button">Open</button>
+        </PopoverTrigger>
+        <PopoverContent>Body</PopoverContent>
+      </Popover>,
+    );
+
+    expect(html).toContain("Body");
+    expect(html).not.toMatch(/undefined|NaN|Invalid Date/);
+  });
+
+  it("hydrates basic defaultOpen markup without mismatch warnings", async () => {
+    const element = (
+      <Popover defaultOpen>
+        <PopoverTrigger asChild>
+          <button type="button">Open</button>
+        </PopoverTrigger>
+        <PopoverContent>Body</PopoverContent>
+      </Popover>
+    );
+    const container = document.createElement("div");
+    container.innerHTML = renderToString(element);
+    document.body.append(container);
+
+    const consoleError = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    let root: Root | undefined;
+
+    try {
+      root = hydrateRoot(container, element);
+      await waitFor(() => {
+        const messages = consoleError.mock.calls.flat().join("\n");
+        expect(messages).not.toMatch(
+          /Hydration failed|did not match|Text content does not match/,
+        );
+      });
+    } finally {
+      root?.unmount();
+      consoleError.mockRestore();
+      container.remove();
+    }
   });
 });

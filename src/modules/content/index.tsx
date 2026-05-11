@@ -10,6 +10,11 @@ import {
 } from "@floating-ui/react-dom";
 import { usePopoverContext } from "@/context";
 import { composeRefs } from "../../core/compose-refs";
+import {
+  createCancelableFocusEvent,
+  focusFirst,
+  getFocusableElements,
+} from "../../core/focus";
 import type {
   PopoverAlign,
   PopoverContextValue,
@@ -19,7 +24,7 @@ import type {
 
 export type PopoverContentProps = {
   side?: PopoverSide;
-  align?: PopoverAlign; 
+  align?: PopoverAlign;
   sideOffset?: number;
   alignOffset?: number;
   collisionPadding?: number;
@@ -46,13 +51,67 @@ function toPlacement(side: PopoverSide, align: PopoverAlign) {
 export const PopoverContent = React.forwardRef<HTMLDivElement, PopoverContentProps>(
   function PopoverContent(props, forwardedRef) {
     const ctx = usePopoverContext("PopoverContent");
+    const [mounted, setMounted] = React.useState(false);
+
+    React.useEffect(() => {
+      setMounted(true);
+    }, []);
+
     if (!ctx.open) return null;
+    if (!mounted) {
+      return (
+        <PopoverContentStatic
+          {...props}
+          ctx={ctx}
+          forwardedRef={forwardedRef}
+        />
+      );
+    }
 
     return (
       <PopoverContentImpl {...props} ctx={ctx} forwardedRef={forwardedRef} />
     );
   },
 );
+
+function PopoverContentStatic(
+  props: PopoverContentProps & {
+    ctx: PopoverContextValue;
+    forwardedRef: React.ForwardedRef<HTMLDivElement>;
+  },
+) {
+  const {
+    ctx,
+    forwardedRef,
+    side = "bottom",
+    align = "center",
+    role = "dialog",
+    style,
+    className,
+    children,
+  } = props;
+
+  const setRefs = composeRefs<HTMLDivElement>(forwardedRef, (node) => {
+    ctx.contentRef.current = node;
+  });
+
+  return (
+    <div
+      ref={setRefs}
+      id={ctx.contentId}
+      role={role}
+      data-df-popover-content=""
+      data-state={ctx.open ? "open" : "closed"}
+      data-side={side}
+      data-align={align}
+      className={className}
+      style={style}
+      tabIndex={-1}
+    >
+      {children}
+    </div>
+  );
+}
 
 function PopoverContentImpl(
   props: PopoverContentProps & {
@@ -71,6 +130,8 @@ function PopoverContentImpl(
     avoidCollisions = true,
     matchTriggerWidth = false,
     role = "dialog",
+    onOpenAutoFocus,
+    onCloseAutoFocus,
     onEscapeKeyDown,
     onInteractOutside,
     style,
@@ -121,6 +182,64 @@ function PopoverContentImpl(
     };
   }, [ctx.onInteractOutsideRef, onInteractOutside]);
 
+  React.useEffect(() => {
+    ctx.onCloseAutoFocusRef.current = onCloseAutoFocus;
+    return () => {
+      if (ctx.onCloseAutoFocusRef.current === onCloseAutoFocus) {
+        ctx.onCloseAutoFocusRef.current = undefined;
+      }
+    };
+  }, [ctx.onCloseAutoFocusRef, onCloseAutoFocus]);
+
+  React.useEffect(() => {
+    const content = ctx.contentRef.current;
+    if (!content) return;
+
+    const event = createCancelableFocusEvent("df.popover.openAutoFocus");
+    onOpenAutoFocus?.(event);
+    if (event.defaultPrevented) return;
+
+    focusFirst(content);
+  }, [ctx.contentRef, onOpenAutoFocus]);
+
+  React.useEffect(() => {
+    if (!ctx.modal) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+
+      const content = ctx.contentRef.current;
+      if (!content) return;
+
+      const focusable = getFocusableElements(content);
+      if (focusable.length === 0) {
+        event.preventDefault();
+        content.focus();
+        return;
+      }
+
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      const activeElement = document.activeElement;
+
+      if (event.shiftKey) {
+        if (activeElement === first || !content.contains(activeElement)) {
+          event.preventDefault();
+          last.focus();
+        }
+        return;
+      }
+
+      if (activeElement === last || !content.contains(activeElement)) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [ctx.contentRef, ctx.modal]);
+
   const [resolvedSide, resolvedAlign = "center"] = placement.split("-") as [
     PopoverSide,
     PopoverAlign | undefined,
@@ -142,6 +261,7 @@ function PopoverContentImpl(
       data-align={resolvedAlign}
       className={className}
       style={{ ...floatingStyles, ...style }}
+      tabIndex={-1}
     >
       {children}
     </div>
