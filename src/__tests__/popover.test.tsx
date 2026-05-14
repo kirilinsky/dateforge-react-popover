@@ -11,6 +11,45 @@ import {
   PopoverTrigger,
 } from "../index";
 
+function mockViewport(width: number, height: number) {
+  const element = document.documentElement;
+  const elementWidth = Object.getOwnPropertyDescriptor(element, "clientWidth");
+  const elementHeight = Object.getOwnPropertyDescriptor(element, "clientHeight");
+  const windowWidth = Object.getOwnPropertyDescriptor(window, "innerWidth");
+  const windowHeight = Object.getOwnPropertyDescriptor(window, "innerHeight");
+
+  Object.defineProperty(element, "clientWidth", {
+    configurable: true,
+    value: width,
+  });
+  Object.defineProperty(element, "clientHeight", {
+    configurable: true,
+    value: height,
+  });
+  Object.defineProperty(window, "innerWidth", {
+    configurable: true,
+    value: width,
+  });
+  Object.defineProperty(window, "innerHeight", {
+    configurable: true,
+    value: height,
+  });
+
+  return () => {
+    if (elementWidth) Object.defineProperty(element, "clientWidth", elementWidth);
+    else delete (element as unknown as Record<string, unknown>).clientWidth;
+
+    if (elementHeight) Object.defineProperty(element, "clientHeight", elementHeight);
+    else delete (element as unknown as Record<string, unknown>).clientHeight;
+
+    if (windowWidth) Object.defineProperty(window, "innerWidth", windowWidth);
+    else delete (window as unknown as Record<string, unknown>).innerWidth;
+
+    if (windowHeight) Object.defineProperty(window, "innerHeight", windowHeight);
+    else delete (window as unknown as Record<string, unknown>).innerHeight;
+  };
+}
+
 describe("Popover", () => {
   it("opens on trigger click", async () => {
     const user = userEvent.setup();
@@ -516,6 +555,118 @@ describe("Popover", () => {
       });
     } finally {
       rectSpy.mockRestore();
+    }
+  });
+
+  it("flips away from viewport collisions when avoidCollisions is enabled", async () => {
+    const restoreViewport = mockViewport(1024, 768);
+    const offsetWidthSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetWidth", "get")
+      .mockImplementation(function offsetWidth(this: HTMLElement) {
+        if (this.dataset.dfPopoverContent !== undefined) return 120;
+        if (this instanceof HTMLButtonElement) return 100;
+        return 0;
+      });
+    const offsetHeightSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetHeight", "get")
+      .mockImplementation(function offsetHeight(this: HTMLElement) {
+        if (this.dataset.dfPopoverContent !== undefined) return 40;
+        if (this instanceof HTMLButtonElement) return 24;
+        return 0;
+      });
+    const rectSpy = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockImplementation(function getBoundingClientRect(this: Element) {
+        if (this instanceof HTMLButtonElement && this.textContent?.includes("Open")) {
+          return new DOMRect(200, 740, 100, 24);
+        }
+        if (this instanceof HTMLElement && this.dataset.dfPopoverContent !== undefined) {
+          return new DOMRect(0, 0, 120, 40);
+        }
+        return new DOMRect();
+      });
+
+    try {
+      render(
+        <Popover defaultOpen>
+          <PopoverTrigger asChild>
+            <button type="button">Open</button>
+          </PopoverTrigger>
+          <PopoverContent
+            collisionPadding={8}
+            side="bottom"
+            sideOffset={8}
+          >
+            Body
+          </PopoverContent>
+        </Popover>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole("dialog")).toHaveAttribute("data-side", "top");
+      });
+    } finally {
+      rectSpy.mockRestore();
+      offsetHeightSpy.mockRestore();
+      offsetWidthSpy.mockRestore();
+      restoreViewport();
+    }
+  });
+
+  it("shifts inside the viewport when aligned content would overflow", async () => {
+    const restoreViewport = mockViewport(1024, 768);
+    const offsetWidthSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetWidth", "get")
+      .mockImplementation(function offsetWidth(this: HTMLElement) {
+        if (this.dataset.dfPopoverContent !== undefined) return 80;
+        if (this instanceof HTMLButtonElement) return 20;
+        return 0;
+      });
+    const offsetHeightSpy = vi
+      .spyOn(HTMLElement.prototype, "offsetHeight", "get")
+      .mockImplementation(function offsetHeight(this: HTMLElement) {
+        if (this.dataset.dfPopoverContent !== undefined) return 32;
+        if (this instanceof HTMLButtonElement) return 24;
+        return 0;
+      });
+    const rectSpy = vi
+      .spyOn(Element.prototype, "getBoundingClientRect")
+      .mockImplementation(function getBoundingClientRect(this: Element) {
+        if (this instanceof HTMLButtonElement && this.textContent?.includes("Open")) {
+          return new DOMRect(990, 20, 20, 24);
+        }
+        if (this instanceof HTMLElement && this.dataset.dfPopoverContent !== undefined) {
+          return new DOMRect(0, 0, 80, 32);
+        }
+        return new DOMRect();
+      });
+
+    try {
+      render(
+        <Popover defaultOpen>
+          <PopoverTrigger asChild>
+            <button type="button">Open</button>
+          </PopoverTrigger>
+          <PopoverContent
+            align="center"
+            collisionPadding={8}
+            side="bottom"
+            sideOffset={8}
+          >
+            Body
+          </PopoverContent>
+        </Popover>,
+      );
+
+      const content = screen.getByRole("dialog");
+      await waitFor(() => {
+        expect(content).toHaveStyle({ transform: "translate(936px, 52px)" });
+      });
+    } finally {
+      rectSpy.mockRestore();
+      offsetHeightSpy.mockRestore();
+      offsetWidthSpy.mockRestore();
+      restoreViewport();
     }
   });
 
